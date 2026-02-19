@@ -11,25 +11,21 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            font-family: Arial, sans-serif;
+            font-family: Arial;
             color: #0ff;
         }
-
         h1 {
             text-shadow: 0 0 15px #0ff;
         }
-
         canvas {
             background: #000;
             border: 2px solid #0ff;
             box-shadow: 0 0 20px #0ff;
         }
-
         #info {
             margin-top: 10px;
             text-align: center;
         }
-
         button {
             margin-top: 10px;
             padding: 6px 15px;
@@ -38,10 +34,30 @@
             border: 2px solid #0ff;
             cursor: pointer;
         }
-
         .ai-on {
             color: #ff00ff;
             text-shadow: 0 0 10px #ff00ff;
+        }
+        #aiLog {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            height: 150px;
+            background: rgba(0,0,0,0.8);
+            color: #0ff;
+            padding: 5px;
+            font-size: 12px;
+            overflow-y: auto;
+            cursor: pointer;
+            border: 1px solid #0ff;
+            display: none;
+        }
+        #aiLog h3{
+            margin:0;
+            font-size:14px;
+            text-align:center;
+            color:#ff00ff;
         }
     </style>
 </head>
@@ -57,38 +73,60 @@
     <button onclick="restartGame()">Restart</button>
 </div>
 
+<div id="aiLog">
+    <h3>AI Thoughts</h3>
+    <div id="logContent"></div>
+</div>
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 const box = 20;
 let snake, direction, food, score, game;
-let speed = 120;
+let speed = 100; 
 let aiEnabled = false;
+let aiPath = [];
+let aiThoughts = [];
+let showAiLog = false;
 
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
 document.getElementById("highScore").innerText = "High Score: " + highScore;
+
+document.getElementById("aiLog").addEventListener("click", ()=>{
+    showAiLog = !showAiLog;
+    document.getElementById("aiLog").style.display = showAiLog ? "block" : "none";
+});
 
 function initGame() {
     snake = [{x: 9*box, y: 10*box}];
     direction = "RIGHT";
     food = randomFood();
     score = 0;
-    speed = 120;
     document.getElementById("score").innerText = "Score: 0";
+    aiPath = [];
+    aiThoughts = [];
+
+    let choice = prompt("Select speed: slow, normal, fast", "normal");
+    choice = (choice||"normal").toLowerCase();
+    if(choice==="slow") speed=200;
+    else if(choice==="fast") speed=50;
+    else speed=100;
 }
 
 function randomFood() {
-    return {
-        x: Math.floor(Math.random()*19)*box,
-        y: Math.floor(Math.random()*19)*box
-    };
+    let newFood;
+    do {
+        newFood = {
+            x: Math.floor(Math.random()*20)*box,
+            y: Math.floor(Math.random()*20)*box
+        };
+    } while(snake.some(seg=>seg.x===newFood.x && seg.y===newFood.y));
+    return newFood;
 }
 
 document.addEventListener("keydown", function(e) {
-
-    // Toggle AI with ]
-    if (e.key === "]") {
+    if(e.key === "]"){
         aiEnabled = !aiEnabled;
         document.getElementById("aiStatus").innerText = "AI: " + (aiEnabled ? "ON" : "OFF");
         document.getElementById("aiStatus").className = aiEnabled ? "ai-on" : "";
@@ -107,74 +145,93 @@ function collision(head, array){
 }
 
 /* ==========================
-   🧠 SIMPLE AI
+   AI LOGIC + 5-MOVE PATH + Thought Log
 ========================== */
 function runAI() {
-    let head = snake[0];
+    aiPath = [];
+    aiThoughts.unshift(""); // new frame
+    if(aiThoughts.length>10) aiThoughts.pop();
 
-    let possibleMoves = [];
+    let tempSnake = snake.map(s=>({...s}));
+    let tempDir = direction;
+    let pathLog = [];
 
-    if (direction !== "RIGHT") possibleMoves.push("LEFT");
-    if (direction !== "LEFT") possibleMoves.push("RIGHT");
-    if (direction !== "DOWN") possibleMoves.push("UP");
-    if (direction !== "UP") possibleMoves.push("DOWN");
+    for(let step=0; step<5; step++){
+        let head = tempSnake[0];
+        let moves = ["LEFT","RIGHT","UP","DOWN"];
+        let safeMoves = [];
 
-    // Prefer moving toward food
-    if (food.x < head.x && possibleMoves.includes("LEFT")) direction = "LEFT";
-    else if (food.x > head.x && possibleMoves.includes("RIGHT")) direction = "RIGHT";
-    else if (food.y < head.y && possibleMoves.includes("UP")) direction = "UP";
-    else if (food.y > head.y && possibleMoves.includes("DOWN")) direction = "DOWN";
-
-    // Safety check: don't crash
-    let next = getNextPosition(direction);
-    if (isDanger(next)) {
-        for (let move of possibleMoves) {
-            let test = getNextPosition(move);
-            if (!isDanger(test)) {
-                direction = move;
-                break;
+        for(let move of moves){
+            let next = getNextPositionTemp(move, tempSnake);
+            if(!isDangerTemp(next,tempSnake)){
+                safeMoves.push(move);
             }
         }
+
+        if(safeMoves.length===0) break;
+
+        safeMoves.sort((a,b)=>{
+            let distA = distToFoodTemp(getNextPositionTemp(a,tempSnake));
+            let distB = distToFoodTemp(getNextPositionTemp(b,tempSnake));
+            return distA - distB;
+        });
+
+        tempDir = safeMoves[0];
+        let nextPos = getNextPositionTemp(tempDir,tempSnake);
+        aiPath.push(nextPos);
+        tempSnake.unshift(nextPos);
+        tempSnake.pop();
+
+        pathLog.push(`Step ${step+1}: move ${tempDir}, pos (${nextPos.x/box},${nextPos.y/box})`);
     }
+
+    aiThoughts[0] = pathLog.join("<br>");
+    if(aiPath.length>0) direction = tempDir;
 }
 
-function getNextPosition(dir) {
-    let x = snake[0].x;
-    let y = snake[0].y;
-
-    if (dir==="LEFT") x-=box;
-    if (dir==="RIGHT") x+=box;
-    if (dir==="UP") y-=box;
-    if (dir==="DOWN") y+=box;
-
+function getNextPositionTemp(dir,snakeArr){
+    let x = snakeArr[0].x;
+    let y = snakeArr[0].y;
+    if(dir==="LEFT") x-=box;
+    if(dir==="RIGHT") x+=box;
+    if(dir==="UP") y-=box;
+    if(dir==="DOWN") y+=box;
     return {x,y};
 }
 
-function isDanger(pos) {
-    return (
-        pos.x<0 || pos.y<0 ||
-        pos.x>=400 || pos.y>=400 ||
-        collision(pos, snake)
-    );
+function distToFoodTemp(pos){ return Math.abs(pos.x-food.x)+Math.abs(pos.y-food.y); }
+function isDangerTemp(pos,snakeArr){
+    return pos.x<0||pos.y<0||pos.x>=400||pos.y>=400||collision(pos,snakeArr);
 }
 
+/* ==========================
+   DRAW LOOP
+========================== */
 function draw(){
     ctx.fillStyle="#000";
     ctx.fillRect(0,0,400,400);
 
-    if (aiEnabled) runAI();
+    if(aiEnabled) runAI();
 
+    // Draw AI path
+    aiPath.forEach((pos,i)=>{
+        ctx.fillStyle=`rgba(255,255,0,${0.3-0.05*i})`; // fading
+        ctx.fillRect(pos.x,pos.y,box,box);
+    });
+
+    // Draw snake
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
         ctx.fillRect(seg.x,seg.y,box,box);
     });
 
+    // Draw food
     ctx.fillStyle="#ff00ff";
     ctx.fillRect(food.x,food.y,box,box);
 
+    // Move snake
     let snakeX=snake[0].x;
     let snakeY=snake[0].y;
-
     if(direction==="LEFT") snakeX-=box;
     if(direction==="RIGHT") snakeX+=box;
     if(direction==="UP") snakeY-=box;
@@ -182,31 +239,26 @@ function draw(){
 
     if(snakeX===food.x && snakeY===food.y){
         score++;
-        if(speed>50) speed-=5;
-        clearInterval(game);
-        game=setInterval(draw,speed);
         document.getElementById("score").innerText="Score: "+score;
         food=randomFood();
-    } else {
-        snake.pop();
-    }
+    } else { snake.pop(); }
 
     let newHead={x:snakeX,y:snakeY};
-
-    if(isDanger(newHead)){
+    if(newHead.x<0||newHead.y<0||newHead.x>=400||newHead.y>=400||collision(newHead,snake)){
         clearInterval(game);
-
         if(score>highScore){
             highScore=score;
             localStorage.setItem("neonSnakeHighScore",highScore);
             document.getElementById("highScore").innerText="High Score: "+highScore;
         }
-
         alert("Game Over! Score: "+score);
         return;
     }
 
     snake.unshift(newHead);
+
+    // Update AI log
+    document.getElementById("logContent").innerHTML = aiThoughts[0]||"";
 }
 
 function restartGame(){
