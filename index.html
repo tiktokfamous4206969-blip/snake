@@ -167,6 +167,7 @@ let snake, direction, food, score, game;
 let speed = 120; // default speed
 let selectedSpeed = speed;
 let aiEnabled = false;
+let gameStarted = false; // only start moving after keypress
 
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
 document.getElementById("highScore").innerText = "High Score: " + highScore;
@@ -192,6 +193,10 @@ function initGame() {
     speed = selectedSpeed; // apply selected speed
     document.getElementById("score").innerText = "Score: 0";
     document.getElementById("gameOverOverlay").style.display = "none"; // hide overlay
+    gameStarted = false;
+
+    // Draw the initial snake and food
+    draw();
 }
 
 function randomFood() {
@@ -207,10 +212,18 @@ document.addEventListener("keydown", function(e) {
     }
 
     if (!aiEnabled) {
-        if (e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
-        if (e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
-        if (e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
-        if (e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
+        let validKey = false;
+        if (e.key==="ArrowLeft" && direction!=="RIGHT") { direction="LEFT"; validKey=true; }
+        if (e.key==="ArrowUp" && direction!=="DOWN") { direction="UP"; validKey=true; }
+        if (e.key==="ArrowRight" && direction!=="LEFT") { direction="RIGHT"; validKey=true; }
+        if (e.key==="ArrowDown" && direction!=="UP") { direction="DOWN"; validKey=true; }
+
+        // Start the game on first valid keypress
+        if (!gameStarted && validKey) {
+            gameStarted = true;
+            clearInterval(game);
+            game = setInterval(draw, speed);
+        }
     }
 });
 
@@ -266,7 +279,7 @@ function draw(){
     ctx.fillStyle="#000";
     ctx.fillRect(0,0,400,400);
 
-    if (aiEnabled) runAI();
+    if (aiEnabled && gameStarted) runAI(); // AI only moves after start
 
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
@@ -275,6 +288,8 @@ function draw(){
 
     ctx.fillStyle="#ff00ff";
     ctx.fillRect(food.x,food.y,box,box);
+
+    if (!gameStarted) return; // stop movement before first keypress
 
     let snakeX=snake[0].x;
     let snakeY=snake[0].y;
@@ -301,7 +316,6 @@ function draw(){
             localStorage.setItem("neonSnakeHighScore",highScore);
             document.getElementById("highScore").innerText="High Score: "+highScore;
         }
-        // Show overlay instead of alert
         document.getElementById("gameOverText").innerText = "Game Over! Score: " + score;
         document.getElementById("gameOverOverlay").style.display = "flex";
         return;
@@ -313,12 +327,10 @@ function draw(){
 function restartGame(){
     clearInterval(game);
     initGame();
-    game=setInterval(draw,speed);
 }
 
-// Initialize
+// Initialize the game, snake drawn but not moving
 initGame();
-game=setInterval(draw,speed);
 </script>
 
 </body>
