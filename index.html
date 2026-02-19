@@ -195,7 +195,7 @@ function initGame() {
     document.getElementById("gameOverOverlay").style.display = "none"; // hide overlay
     gameStarted = false;
 
-    // Draw the initial snake and food
+    // Draw initial snake & food
     draw();
 }
 
@@ -203,6 +203,7 @@ function randomFood() {
     return { x: Math.floor(Math.random()*19)*box, y: Math.floor(Math.random()*19)*box };
 }
 
+// Listen for all keypresses to start the game, even if AI is ON
 document.addEventListener("keydown", function(e) {
     // Toggle AI with ]
     if (e.key === "]") {
@@ -211,19 +212,18 @@ document.addEventListener("keydown", function(e) {
         document.getElementById("aiStatus").className = aiEnabled ? "ai-on" : "";
     }
 
-    if (!aiEnabled) {
-        let validKey = false;
-        if (e.key==="ArrowLeft" && direction!=="RIGHT") { direction="LEFT"; validKey=true; }
-        if (e.key==="ArrowUp" && direction!=="DOWN") { direction="UP"; validKey=true; }
-        if (e.key==="ArrowRight" && direction!=="LEFT") { direction="RIGHT"; validKey=true; }
-        if (e.key==="ArrowDown" && direction!=="UP") { direction="DOWN"; validKey=true; }
+    // Check arrow keys
+    let validKey = false;
+    if (e.key==="ArrowLeft" && direction!=="RIGHT") { direction="LEFT"; validKey=true; }
+    if (e.key==="ArrowUp" && direction!=="DOWN") { direction="UP"; validKey=true; }
+    if (e.key==="ArrowRight" && direction!=="LEFT") { direction="RIGHT"; validKey=true; }
+    if (e.key==="ArrowDown" && direction!=="UP") { direction="DOWN"; validKey=true; }
 
-        // Start the game on first valid keypress
-        if (!gameStarted && validKey) {
-            gameStarted = true;
-            clearInterval(game);
-            game = setInterval(draw, speed);
-        }
+    // Start game on first arrow keypress regardless of AI
+    if (!gameStarted && validKey) {
+        gameStarted = true;
+        clearInterval(game);
+        game = setInterval(draw, speed);
     }
 });
 
@@ -279,7 +279,8 @@ function draw(){
     ctx.fillStyle="#000";
     ctx.fillRect(0,0,400,400);
 
-    if (aiEnabled && gameStarted) runAI(); // AI only moves after start
+    // AI only moves after game started
+    if (aiEnabled && gameStarted) runAI();
 
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
