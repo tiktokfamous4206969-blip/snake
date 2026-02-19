@@ -203,7 +203,7 @@ function randomFood() {
     return { x: Math.floor(Math.random()*19)*box, y: Math.floor(Math.random()*19)*box };
 }
 
-// Listen for all keypresses to start the game, even if AI is ON
+// Keydown listener: first arrow keypress starts the game even if AI is ON
 document.addEventListener("keydown", function(e) {
     // Toggle AI with ]
     if (e.key === "]") {
@@ -213,17 +213,22 @@ document.addEventListener("keydown", function(e) {
     }
 
     // Check arrow keys
-    let validKey = false;
-    if (e.key==="ArrowLeft" && direction!=="RIGHT") { direction="LEFT"; validKey=true; }
-    if (e.key==="ArrowUp" && direction!=="DOWN") { direction="UP"; validKey=true; }
-    if (e.key==="ArrowRight" && direction!=="LEFT") { direction="RIGHT"; validKey=true; }
-    if (e.key==="ArrowDown" && direction!=="UP") { direction="DOWN"; validKey=true; }
+    const arrowKeys = ["ArrowLeft","ArrowUp","ArrowRight","ArrowDown"];
+    if (arrowKeys.includes(e.key)) {
+        // Start game on first keypress regardless of AI
+        if (!gameStarted) {
+            gameStarted = true;
+            clearInterval(game);
+            game = setInterval(draw, speed);
+        }
 
-    // Start game on first arrow keypress regardless of AI
-    if (!gameStarted && validKey) {
-        gameStarted = true;
-        clearInterval(game);
-        game = setInterval(draw, speed);
+        // Player controls only if AI is OFF
+        if (!aiEnabled) {
+            if (e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
+            if (e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
+            if (e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
+            if (e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
+        }
     }
 });
 
