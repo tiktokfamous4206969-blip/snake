@@ -45,22 +45,59 @@
             background: #0ff;
             color: #000;
         }
+
+        /* Game Over Overlay */
+        #gameOverOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: #ff00ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 2em;
+            display: none; /* hidden by default */
+        }
+
+        #speedButtons {
+            display: flex;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+
+        #gameContainer {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
 
 <h1>🐍 Neon Snake AI</h1>
-<canvas id="game" width="400" height="400"></canvas>
+
+<div id="gameContainer">
+    <canvas id="game" width="400" height="400"></canvas>
+    <div id="speedButtons">
+        <button id="slowBtn">Slow</button>
+        <button id="normalBtn" class="speed-selected">Normal</button>
+        <button id="fastBtn">Fast</button>
+    </div>
+</div>
 
 <div id="info">
     <div id="score">Score: 0</div>
     <div id="highScore">High Score: 0</div>
     <div id="aiStatus">AI: OFF</div>
-    <div>
-        <button id="slowBtn">Slow</button>
-        <button id="normalBtn" class="speed-selected">Normal</button>
-        <button id="fastBtn">Fast</button>
-    </div>
+    <button onclick="restartGame()">Restart</button>
+</div>
+
+<!-- Game Over Overlay -->
+<div id="gameOverOverlay">
+    <div id="gameOverText">Game Over! Score: 0</div>
     <button onclick="restartGame()">Restart</button>
 </div>
 
@@ -95,8 +132,9 @@ function initGame() {
     direction = "RIGHT";
     food = randomFood();
     score = 0;
-    speed = selectedSpeed; // apply selected speed for both player and AI
+    speed = selectedSpeed; // apply selected speed
     document.getElementById("score").innerText = "Score: 0";
+    document.getElementById("gameOverOverlay").style.display = "none"; // hide overlay
 }
 
 function randomFood() {
@@ -206,7 +244,9 @@ function draw(){
             localStorage.setItem("neonSnakeHighScore",highScore);
             document.getElementById("highScore").innerText="High Score: "+highScore;
         }
-        alert("Game Over! Score: "+score);
+        // Show overlay instead of alert
+        document.getElementById("gameOverText").innerText = "Game Over! Score: " + score;
+        document.getElementById("gameOverOverlay").style.display = "flex";
         return;
     }
 
@@ -219,6 +259,7 @@ function restartGame(){
     game=setInterval(draw,speed);
 }
 
+// Initialize
 initGame();
 game=setInterval(draw,speed);
 </script>
