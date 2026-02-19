@@ -3,137 +3,26 @@
 <head>
     <title>Neon Snake AI</title>
     <style>
-        body {
-            margin: 0;
-            background: radial-gradient(circle at center, #0f0f0f, #000);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            color: #0ff;
-        }
-
+        body { margin:0; background: radial-gradient(circle at center, #0f0f0f, #000); display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family: Arial,sans-serif; color:#0ff;}
         h1 { text-shadow: 0 0 15px #0ff; }
-
-        canvas {
-            background: #000;
-            border: 2px solid #0ff;
-            box-shadow: 0 0 20px #0ff;
-        }
-
-        #info {
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .ai-on {
-            color: #ff00ff;
-            text-shadow: 0 0 10px #ff00ff;
-        }
-
-        /* ========================
-           Game Container & Neon Panel
-        ========================= */
-        #gameContainer {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            position: relative;
-        }
-
-        #speedPanel {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #000;
-            border: 2px solid #0ff;
-            box-shadow: 0 0 20px #0ff;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: Arial, sans-serif;
-        }
-
-        #speedPanel h2 {
-            margin: 0 0 10px 0;
-            color: #0ff;
-            text-shadow: 0 0 10px #0ff;
-        }
-
-        #speedPanel button {
-            margin: 5px 0;
-            width: 80px;
-            padding: 6px 0;
-            background: transparent;
-            color: #0ff;
-            border: 2px solid #0ff;
-            border-radius: 5px;
-            text-shadow: 0 0 5px #0ff;
-            transition: all 0.2s;
-        }
-
-        #speedPanel button:hover {
-            background: #0ff;
-            color: #000;
-            box-shadow: 0 0 15px #0ff;
-        }
-
-        .speed-selected {
-            background: #0ff;
-            color: #000;
-            box-shadow: 0 0 15px #0ff;
-        }
-
-        /* ========================
-           Game Over Overlay
-        ========================= */
-        #gameOverOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            color: #ff00ff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            font-size: 2em;
-            display: none; /* hidden by default */
-            z-index: 10;
-        }
-
-        #gameOverOverlay button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: transparent;
-            color: #ff00ff;
-            border: 2px solid #ff00ff;
-            border-radius: 8px;
-            font-size: 0.5em;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        #gameOverOverlay button:hover {
-            background: #ff00ff;
-            color: #000;
-            box-shadow: 0 0 15px #ff00ff;
-        }
-
+        canvas { background:#000; border:2px solid #0ff; box-shadow:0 0 20px #0ff; }
+        #info { margin-top:10px; text-align:center; }
+        button { cursor:pointer; }
+        .ai-on { color:#ff00ff; text-shadow:0 0 10px #ff00ff; }
+        #gameContainer { display:flex; align-items:flex-start; gap:20px; position:relative; }
+        #speedPanel { display:flex; flex-direction:column; align-items:center; background:#000; border:2px solid #0ff; box-shadow:0 0 20px #0ff; padding:15px; border-radius:10px; }
+        #speedPanel h2 { margin:0 0 10px 0; color:#0ff; text-shadow:0 0 10px #0ff; }
+        #speedPanel button { margin:5px 0; width:80px; padding:6px 0; background:transparent; color:#0ff; border:2px solid #0ff; border-radius:5px; text-shadow:0 0 5px #0ff; transition: all 0.2s; }
+        #speedPanel button:hover { background:#0ff; color:#000; box-shadow:0 0 15px #0ff; }
+        .speed-selected { background:#0ff; color:#000; box-shadow:0 0 15px #0ff; }
+        #gameOverOverlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:#ff00ff; display:flex; align-items:center; justify-content:center; flex-direction:column; font-size:2em; display:none; z-index:10; }
+        #gameOverOverlay button { margin-top:20px; padding:10px 20px; background:transparent; color:#ff00ff; border:2px solid #ff00ff; border-radius:8px; font-size:0.5em; cursor:pointer; transition: all 0.2s; }
+        #gameOverOverlay button:hover { background:#ff00ff; color:#000; box-shadow:0 0 15px #ff00ff; }
     </style>
 </head>
 <body>
 
 <h1>🐍 Neon Snake AI</h1>
-
-<!-- Game Canvas + Side Speed Panel -->
 <div id="gameContainer">
     <canvas id="game" width="400" height="400"></canvas>
     <div id="speedPanel">
@@ -143,16 +32,12 @@
         <button id="fastBtn">Fast</button>
     </div>
 </div>
-
-<!-- Info Section -->
 <div id="info">
     <div id="score">Score: 0</div>
     <div id="highScore">High Score: 0</div>
     <div id="aiStatus">AI: OFF</div>
     <button onclick="restartGame()">Restart</button>
 </div>
-
-<!-- Game Over Overlay -->
 <div id="gameOverOverlay">
     <div id="gameOverText">Game Over! Score: 0</div>
     <button onclick="restartGame()">Restart</button>
@@ -163,11 +48,12 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 const box = 20;
+const gridSize = 20;
 let snake, direction, food, score, game;
-let speed = 120; // default speed
+let speed = 120;
 let selectedSpeed = speed;
 let aiEnabled = false;
-let gameStarted = false; // only start moving after keypress
+let gameStarted = false;
 
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
 document.getElementById("highScore").innerText = "High Score: " + highScore;
@@ -179,127 +65,135 @@ document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(6
 
 function selectSpeed(val, btnId){
     selectedSpeed = val;
-    ["slowBtn","normalBtn","fastBtn"].forEach(id => {
-        document.getElementById(id).classList.remove("speed-selected");
-    });
+    ["slowBtn","normalBtn","fastBtn"].forEach(id => document.getElementById(id).classList.remove("speed-selected"));
     document.getElementById(btnId).classList.add("speed-selected");
 }
 
 function initGame() {
-    snake = [{x: 9*box, y: 10*box}];
+    snake = [{x:9*box, y:10*box}];
     direction = "RIGHT";
     food = randomFood();
     score = 0;
-    speed = selectedSpeed; // apply selected speed
-    document.getElementById("score").innerText = "Score: 0";
-    document.getElementById("gameOverOverlay").style.display = "none"; // hide overlay
-    gameStarted = false;
-
-    // Draw initial snake & food
+    speed = selectedSpeed;
+    document.getElementById("score").innerText="Score: 0";
+    document.getElementById("gameOverOverlay").style.display="none";
+    gameStarted=false;
     draw();
 }
 
 function randomFood() {
-    return { x: Math.floor(Math.random()*19)*box, y: Math.floor(Math.random()*19)*box };
+    return { x: Math.floor(Math.random()*gridSize)*box, y: Math.floor(Math.random()*gridSize)*box };
 }
 
-// Keydown listener: first arrow keypress starts the game even if AI is ON
-document.addEventListener("keydown", function(e) {
-    // Toggle AI with ]
-    if (e.key === "]") {
+document.addEventListener("keydown", function(e){
+    if(e.key === "]") {
         aiEnabled = !aiEnabled;
-        document.getElementById("aiStatus").innerText = "AI: " + (aiEnabled ? "ON" : "OFF");
-        document.getElementById("aiStatus").className = aiEnabled ? "ai-on" : "";
+        document.getElementById("aiStatus").innerText="AI: "+(aiEnabled?"ON":"OFF");
+        document.getElementById("aiStatus").className=aiEnabled?"ai-on":"";
     }
-
-    // Check arrow keys
     const arrowKeys = ["ArrowLeft","ArrowUp","ArrowRight","ArrowDown"];
-    if (arrowKeys.includes(e.key)) {
-        // Start game on first keypress regardless of AI
-        if (!gameStarted) {
-            gameStarted = true;
+    if(arrowKeys.includes(e.key)){
+        if(!gameStarted){
+            gameStarted=true;
             clearInterval(game);
-            game = setInterval(draw, speed);
+            game=setInterval(draw,speed);
         }
-
-        // Player controls only if AI is OFF
-        if (!aiEnabled) {
-            if (e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
-            if (e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
-            if (e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
-            if (e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
+        if(!aiEnabled){
+            if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
+            if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
+            if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
+            if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
         }
     }
 });
 
-function collision(head, array){
-    return array.some(seg => seg.x===head.x && seg.y===head.y);
-}
+function collision(head,array){ return array.some(seg=>seg.x===head.x && seg.y===head.y); }
 
-/* ==========================
-   🧠 SIMPLE AI
-========================== */
-function runAI() {
-    let head = snake[0];
-    let possibleMoves = [];
-    if (direction !== "RIGHT") possibleMoves.push("LEFT");
-    if (direction !== "LEFT") possibleMoves.push("RIGHT");
-    if (direction !== "DOWN") possibleMoves.push("UP");
-    if (direction !== "UP") possibleMoves.push("DOWN");
+// =======================
+// Unbeatable AI (BFS pathfinding)
+// =======================
+function runAI(){
+    const head = snake[0];
 
-    // Prefer moving toward food
-    if (food.x < head.x && possibleMoves.includes("LEFT")) direction = "LEFT";
-    else if (food.x > head.x && possibleMoves.includes("RIGHT")) direction = "RIGHT";
-    else if (food.y < head.y && possibleMoves.includes("UP")) direction = "UP";
-    else if (food.y > head.y && possibleMoves.includes("DOWN")) direction = "DOWN";
+    const directions = ["LEFT","RIGHT","UP","DOWN"];
+    const moves = directions.map(d=>({dir:d,pos:getNextPosition(d)})).filter(m=>!isDanger(m.pos));
 
-    // Safety check: don't crash
-    let next = getNextPosition(direction);
-    if (isDanger(next)) {
-        for (let move of possibleMoves) {
-            let test = getNextPosition(move);
-            if (!isDanger(test)) {
-                direction = move;
-                break;
-            }
+    if(moves.length===0) return; // trapped
+
+    // BFS to find shortest path to food
+    const queue = [];
+    const visited = Array(gridSize).fill(null).map(()=>Array(gridSize).fill(false));
+    queue.push({x: head.x, y: head.y, path: []});
+    visited[head.y/box][head.x/box] = true;
+
+    let foundPath = null;
+
+    const bodySet = new Set(snake.map(s=>s.x+","+s.y));
+
+    while(queue.length>0){
+        const current = queue.shift();
+        if(current.x===food.x && current.y===food.y){
+            foundPath = current.path;
+            break;
         }
+        for(const d of directions){
+            const next = {x: current.x, y: current.y};
+            if(d==="LEFT") next.x-=box;
+            if(d==="RIGHT") next.x+=box;
+            if(d==="UP") next.y-=box;
+            if(d==="DOWN") next.y+=box;
+            if(next.x<0||next.y<0||next.x>=gridSize*box||next.y>=gridSize*box) continue;
+            if(bodySet.has(next.x+","+next.y)) continue;
+            if(visited[next.y/box][next.x/box]) continue;
+            visited[next.y/box][next.x/box]=true;
+            queue.push({x:next.x, y:next.y, path:current.path.concat(d)});
+        }
+    }
+
+    if(foundPath && foundPath.length>0){
+        direction = foundPath[0];
+    }else{
+        // No path to food: move towards tail safely
+        const tail = snake[snake.length-1];
+        const safeMoves = moves.filter(m=>{
+            const dx = Math.abs(m.pos.x-tail.x);
+            const dy = Math.abs(m.pos.y-tail.y);
+            return dx+dy>0;
+        });
+        if(safeMoves.length>0) direction = safeMoves[0].dir;
+        else direction = moves[0].dir;
     }
 }
 
-function getNextPosition(dir) {
-    let x = snake[0].x;
-    let y = snake[0].y;
-    if (dir==="LEFT") x-=box;
-    if (dir==="RIGHT") x+=box;
-    if (dir==="UP") y-=box;
-    if (dir==="DOWN") y+=box;
+function getNextPosition(dir){
+    let x=snake[0].x, y=snake[0].y;
+    if(dir==="LEFT") x-=box;
+    if(dir==="RIGHT") x+=box;
+    if(dir==="UP") y-=box;
+    if(dir==="DOWN") y+=box;
     return {x,y};
 }
 
-function isDanger(pos) {
-    return (pos.x<0 || pos.y<0 || pos.x>=400 || pos.y>=400 || collision(pos, snake));
+function isDanger(pos){
+    return (pos.x<0 || pos.y<0 || pos.x>=gridSize*box || pos.y>=gridSize*box || collision(pos,snake));
 }
 
 function draw(){
-    ctx.fillStyle="#000";
-    ctx.fillRect(0,0,400,400);
+    ctx.fillStyle="#000"; ctx.fillRect(0,0,gridSize*box,gridSize*box);
 
-    // AI only moves after game started
-    if (aiEnabled && gameStarted) runAI();
+    if(aiEnabled && gameStarted) runAI();
 
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
         ctx.fillRect(seg.x,seg.y,box,box);
     });
 
-    ctx.fillStyle="#ff00ff";
-    ctx.fillRect(food.x,food.y,box,box);
+    ctx.fillStyle="#ff00ff"; ctx.fillRect(food.x,food.y,box,box);
 
-    if (!gameStarted) return; // stop movement before first keypress
+    if(!gameStarted) return;
 
     let snakeX=snake[0].x;
     let snakeY=snake[0].y;
-
     if(direction==="LEFT") snakeX-=box;
     if(direction==="RIGHT") snakeX+=box;
     if(direction==="UP") snakeY-=box;
@@ -311,31 +205,23 @@ function draw(){
         clearInterval(game);
         game=setInterval(draw,speed);
         food=randomFood();
-    } else { snake.pop(); }
+    } else snake.pop();
 
-    let newHead={x:snakeX,y:snakeY};
+    const newHead={x:snakeX,y:snakeY};
 
     if(isDanger(newHead)){
         clearInterval(game);
-        if(score>highScore){
-            highScore=score;
-            localStorage.setItem("neonSnakeHighScore",highScore);
-            document.getElementById("highScore").innerText="High Score: "+highScore;
-        }
-        document.getElementById("gameOverText").innerText = "Game Over! Score: " + score;
-        document.getElementById("gameOverOverlay").style.display = "flex";
+        if(score>highScore){ highScore=score; localStorage.setItem("neonSnakeHighScore",highScore); document.getElementById("highScore").innerText="High Score: "+highScore; }
+        document.getElementById("gameOverText").innerText="Game Over! Score: "+score;
+        document.getElementById("gameOverOverlay").style.display="flex";
         return;
     }
 
     snake.unshift(newHead);
 }
 
-function restartGame(){
-    clearInterval(game);
-    initGame();
-}
+function restartGame(){ clearInterval(game); initGame(); }
 
-// Initialize the game, snake drawn but not moving
 initGame();
 </script>
 
