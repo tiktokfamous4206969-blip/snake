@@ -16,6 +16,7 @@
         }
 
         h1 { text-shadow: 0 0 15px #0ff; }
+
         canvas {
             background: #000;
             border: 2px solid #0ff;
@@ -28,11 +29,6 @@
         }
 
         button {
-            margin: 5px;
-            padding: 6px 15px;
-            background: transparent;
-            color: #0ff;
-            border: 2px solid #0ff;
             cursor: pointer;
         }
 
@@ -41,19 +37,68 @@
             text-shadow: 0 0 10px #ff00ff;
         }
 
+        /* ========================
+           Game Container & Neon Panel
+        ========================= */
+        #gameContainer {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            position: relative;
+        }
+
+        #speedPanel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #000;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        #speedPanel h2 {
+            margin: 0 0 10px 0;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        #speedPanel button {
+            margin: 5px 0;
+            width: 80px;
+            padding: 6px 0;
+            background: transparent;
+            color: #0ff;
+            border: 2px solid #0ff;
+            border-radius: 5px;
+            text-shadow: 0 0 5px #0ff;
+            transition: all 0.2s;
+        }
+
+        #speedPanel button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 15px #0ff;
+        }
+
         .speed-selected {
             background: #0ff;
             color: #000;
+            box-shadow: 0 0 15px #0ff;
         }
 
-        /* Game Over Overlay */
+        /* ========================
+           Game Over Overlay
+        ========================= */
         #gameOverOverlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             color: #ff00ff;
             display: flex;
             align-items: center;
@@ -61,33 +106,45 @@
             flex-direction: column;
             font-size: 2em;
             display: none; /* hidden by default */
+            z-index: 10;
         }
 
-        #speedButtons {
-            display: flex;
-            flex-direction: column;
-            margin-left: 10px;
+        #gameOverOverlay button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: transparent;
+            color: #ff00ff;
+            border: 2px solid #ff00ff;
+            border-radius: 8px;
+            font-size: 0.5em;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        #gameContainer {
-            display: flex;
-            align-items: center;
+        #gameOverOverlay button:hover {
+            background: #ff00ff;
+            color: #000;
+            box-shadow: 0 0 15px #ff00ff;
         }
+
     </style>
 </head>
 <body>
 
 <h1>🐍 Neon Snake AI</h1>
 
+<!-- Game Canvas + Side Speed Panel -->
 <div id="gameContainer">
     <canvas id="game" width="400" height="400"></canvas>
-    <div id="speedButtons">
+    <div id="speedPanel">
+        <h2>Speed</h2>
         <button id="slowBtn">Slow</button>
         <button id="normalBtn" class="speed-selected">Normal</button>
         <button id="fastBtn">Fast</button>
     </div>
 </div>
 
+<!-- Info Section -->
 <div id="info">
     <div id="score">Score: 0</div>
     <div id="highScore">High Score: 0</div>
