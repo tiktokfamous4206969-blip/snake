@@ -62,16 +62,14 @@ let speed = 3; // pixels per frame
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
 document.getElementById("highScore").innerText = "High Score: " + highScore;
 
-let headHistory = []; // store positions for segments
-let segmentDistance = box; // distance between segments
-
-// Initialize snake with 5 segments
-let initialSegments = 5;
+let headHistory = [];
+let segmentDistance = box;
+const initialSegments = 5;
 
 // Speed buttons
 document.getElementById("slowBtn").addEventListener("click", () => selectSpeed(2, "slowBtn"));
 document.getElementById("normalBtn").addEventListener("click", () => selectSpeed(3, "normalBtn"));
-document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(5, "fastBtn"));
+document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(6, "fastBtn"));
 
 function selectSpeed(pxSpeed, btnId){
     speed = pxSpeed;
@@ -119,11 +117,9 @@ document.addEventListener("keydown", function(e){
     }
 });
 
-function distance(a,b){
-    return Math.hypot(a.x-b.x, a.y-b.y);
-}
+function distance(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 
-// AI: smooth move toward food
+// AI move
 function runAI(){
     let dx = food.x - headPos.x;
     let dy = food.y - headPos.y;
@@ -134,12 +130,18 @@ function runAI(){
     }
 }
 
+// Accurate collision
 function collision(){
-    // self collision
-    for(let i=5;i<snake.length;i++){
-        if(distance(headPos, snake[i]) < box/2) return true;
+    // Wall collision
+    if(headPos.x < 0 || headPos.y < 0 || headPos.x > canvas.width || headPos.y > canvas.height) return true;
+
+    // Self-collision: skip segments that are too close
+    let skipSegments = Math.floor(segmentDistance / speed) + 1;
+    for(let i=skipSegments; i<snake.length; i++){
+        if(distance(headPos, snake[i]) < box * 0.9) return true;
     }
-    return headPos.x < 0 || headPos.y < 0 || headPos.x > canvas.width || headPos.y > canvas.height;
+
+    return false;
 }
 
 function gameLoop(){
@@ -156,7 +158,7 @@ function gameLoop(){
         headPos.y += direction.y * speed;
         headHistory.unshift({x: headPos.x, y: headPos.y});
 
-        // Update segments along head path
+        // Update snake segments along history
         for(let i=0;i<snake.length;i++){
             let index = Math.floor(i * segmentDistance / speed);
             if(index < headHistory.length){
@@ -170,15 +172,14 @@ function gameLoop(){
             score++;
             document.getElementById("score").innerText = "Score: " + score;
             food = randomFood();
-            // add new segment at tail
             let tail = snake[snake.length-1];
             snake.push({x: tail.x, y: tail.y});
         }
 
-        // Trim headHistory to avoid memory bloat
-        if(headHistory.length > 1000) headHistory.pop();
+        // Trim headHistory to avoid memory issues
+        if(headHistory.length > 2000) headHistory.pop();
 
-        // Collision
+        // Collision check
         if(collision()){
             if(score>highScore){ highScore=score; localStorage.setItem("neonSnakeHighScore",highScore); document.getElementById("highScore").innerText="High Score: "+highScore; }
             document.getElementById("gameOverText").innerText="Game Over! Score: "+score;
