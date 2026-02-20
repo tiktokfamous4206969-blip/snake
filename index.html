@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Google Snake Smooth</title>
+    <title>Smooth Snake Game</title>
     <style>
         body { margin:0; background: radial-gradient(circle at center, #0f0f0f, #000); display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family: Arial,sans-serif; color:#0ff;}
         h1 { text-shadow: 0 0 15px #0ff; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h1>Smooth Snake Game</h1>
+<h1>Smooth Snake</h1>
 <div id="gameContainer">
     <canvas id="game" width="400" height="400"></canvas>
     <div id="speedPanel">
@@ -49,44 +49,45 @@ const ctx = canvas.getContext("2d");
 
 const box = 20;
 const gridSize = 20;
+
 let snake = [];
-let direction = {x:1, y:0}; // pixel movement direction
+let direction = {x:1, y:0}; // normalized vector
+let targetDirection = {x:1, y:0}; // for smooth turning
 let food = {};
 let score = 0;
 let aiEnabled = false;
 let gameStarted = false;
-let speed = 2; // pixels per frame
-let moveInterval = 120; // for AI path updates
+let speed = 3; // pixels per frame
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
-
 document.getElementById("highScore").innerText = "High Score: " + highScore;
 
-// Speed buttons
-document.getElementById("slowBtn").addEventListener("click", () => selectSpeed(1, 150, "slowBtn"));
-document.getElementById("normalBtn").addEventListener("click", () => selectSpeed(2, 120, "normalBtn"));
-document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(4, 60, "fastBtn"));
+let segmentDistance = box; // distance between segments
 
-function selectSpeed(pxSpeed, interval, btnId){
+// Speed buttons
+document.getElementById("slowBtn").addEventListener("click", () => selectSpeed(2, "slowBtn"));
+document.getElementById("normalBtn").addEventListener("click", () => selectSpeed(3, "normalBtn"));
+document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(5, "fastBtn"));
+
+function selectSpeed(pxSpeed, btnId){
     speed = pxSpeed;
-    moveInterval = interval;
     ["slowBtn","normalBtn","fastBtn"].forEach(id => document.getElementById(id).classList.remove("speed-selected"));
     document.getElementById(btnId).classList.add("speed-selected");
 }
 
 function initGame() {
-    snake = [{x:9*box, y:10*box}]; // pixel coordinates
+    snake = [{x:9*box + box/2, y:10*box + box/2}]; // start head at center of grid cell
     direction = {x:1, y:0};
+    targetDirection = {x:1, y:0};
     food = randomFood();
     score = 0;
     document.getElementById("score").innerText="Score: 0";
     document.getElementById("gameOverOverlay").style.display="none";
     gameStarted=false;
-    lastMove = performance.now();
     requestAnimationFrame(gameLoop);
 }
 
 function randomFood() {
-    return { x: Math.floor(Math.random()*gridSize)*box, y: Math.floor(Math.random()*gridSize)*box };
+    return { x: Math.floor(Math.random()*gridSize)*box + box/2, y: Math.floor(Math.random()*gridSize)*box + box/2 };
 }
 
 document.addEventListener("keydown", function(e){
@@ -97,71 +98,99 @@ document.addEventListener("keydown", function(e){
     }
     const arrowKeys = ["ArrowLeft","ArrowUp","ArrowRight","ArrowDown"];
     if(arrowKeys.includes(e.key)){
-        if(!gameStarted){
-            gameStarted=true;
-        }
+        if(!gameStarted) gameStarted=true;
         if(!aiEnabled){
-            if(e.key==="ArrowLeft" && direction.x!==1) direction={x:-1,y:0};
-            if(e.key==="ArrowUp" && direction.y!==1) direction={x:0,y:-1};
-            if(e.key==="ArrowRight" && direction.x!==-1) direction={x:1,y:0};
-            if(e.key==="ArrowDown" && direction.y!==-1) direction={x:0,y:1};
+            if(e.key==="ArrowLeft" && direction.x!==1) targetDirection={x:-1, y:0};
+            if(e.key==="ArrowUp" && direction.y!==1) targetDirection={x:0, y:-1};
+            if(e.key==="ArrowRight" && direction.x!==-1) targetDirection={x:1, y:0};
+            if(e.key==="ArrowDown" && direction.y!==-1) targetDirection={x:0, y:1};
         }
     }
 });
 
-function collision(pos,array){
-    return array.some(seg=>Math.abs(seg.x - pos.x)<1 && Math.abs(seg.y - pos.y)<1);
+function distance(a,b){
+    return Math.hypot(a.x-b.x, a.y-b.y);
 }
 
-// AI simplified for smooth movement
+// AI: move smoothly towards food
 function runAI(){
     const head = snake[0];
-    const dx = food.x - head.x;
-    const dy = food.y - head.y;
-    // prioritize horizontal movement
+    let dx = food.x - head.x;
+    let dy = food.y - head.y;
     if(Math.abs(dx) > Math.abs(dy)){
-        direction.x = dx>0?1:-1; direction.y=0;
+        targetDirection = {x: dx>0?1:-1, y:0};
     } else {
-        direction.x=0; direction.y=dy>0?1:-1;
+        targetDirection = {x:0, y: dy>0?1:-1};
     }
 }
 
-let lastMove = 0;
-function gameLoop(timestamp){
+function collision(pos){
+    for(let i=1;i<snake.length;i++){
+        if(distance(pos,snake[i])<box/2) return true;
+    }
+    return (pos.x < 0 || pos.y < 0 || pos.x > canvas.width || pos.y > canvas.height);
+}
+
+function gameLoop(){
     ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
 
     if(aiEnabled && gameStarted) runAI();
 
-    // Move snake only every N pixels
-    if(gameStarted && timestamp - lastMove > moveInterval){
-        lastMove = timestamp;
-        const newHead = { x: snake[0].x + direction.x*box, y: snake[0].y + direction.y*box };
-        
+    if(gameStarted){
+        // Smooth direction change
+        direction = targetDirection;
+
+        // Move head
+        let head = snake[0];
+        let newHead = {x: head.x + direction.x*speed, y: head.y + direction.y*speed};
+        snake.unshift(newHead);
+
+        // Keep spacing for segments
+        for(let i=1;i<snake.length;i++){
+            let prev = snake[i-1];
+            let curr = snake[i];
+            let d = distance(prev, curr);
+            if(d>segmentDistance){
+                let ratio = (d-segmentDistance)/d;
+                curr.x += (prev.x - curr.x)*ratio;
+                curr.y += (prev.y - curr.y)*ratio;
+            }
+        }
+
+        // Eat food
+        if(distance(newHead, food) < box){
+            score++;
+            document.getElementById("score").innerText = "Score: " + score;
+            food = randomFood();
+            // add new segment at tail
+            let tail = snake[snake.length-1];
+            snake.push({x: tail.x, y: tail.y});
+        } else {
+            snake.pop(); // remove last segment for smooth movement
+        }
+
         // Check collision
-        if(newHead.x<0||newHead.y<0||newHead.x>=gridSize*box||newHead.y>=gridSize*box||collision(newHead,snake)){
+        if(collision(newHead)){
             if(score>highScore){ highScore=score; localStorage.setItem("neonSnakeHighScore",highScore); document.getElementById("highScore").innerText="High Score: "+highScore; }
             document.getElementById("gameOverText").innerText="Game Over! Score: "+score;
             document.getElementById("gameOverOverlay").style.display="flex";
             return;
         }
-
-        snake.unshift(newHead);
-        // Eat food
-        if(Math.abs(newHead.x - food.x)<1 && Math.abs(newHead.y - food.y)<1){
-            score++;
-            document.getElementById("score").innerText="Score: "+score;
-            food=randomFood();
-        } else snake.pop();
     }
+
+    // Draw food
+    ctx.fillStyle="#ff00ff"; 
+    ctx.beginPath();
+    ctx.arc(food.x, food.y, box/2, 0, Math.PI*2);
+    ctx.fill();
 
     // Draw snake
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
-        ctx.fillRect(seg.x,seg.y,box,box);
+        ctx.beginPath();
+        ctx.arc(seg.x, seg.y, box/2, 0, Math.PI*2);
+        ctx.fill();
     });
-
-    // Draw food
-    ctx.fillStyle="#ff00ff"; ctx.fillRect(food.x,food.y,box,box);
 
     requestAnimationFrame(gameLoop);
 }
