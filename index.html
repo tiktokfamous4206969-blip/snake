@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>google classroom</title>
+    <title>Google Snake Smooth</title>
     <style>
         body { margin:0; background: radial-gradient(circle at center, #0f0f0f, #000); display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family: Arial,sans-serif; color:#0ff;}
         h1 { text-shadow: 0 0 15px #0ff; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h1>Snake In james' ass</h1>
+<h1>Smooth Snake Game</h1>
 <div id="gameContainer">
     <canvas id="game" width="400" height="400"></canvas>
     <div id="speedPanel">
@@ -49,36 +49,40 @@ const ctx = canvas.getContext("2d");
 
 const box = 20;
 const gridSize = 20;
-let snake, direction, food, score, game;
-let speed = 120;
-let selectedSpeed = speed;
+let snake = [];
+let direction = {x:1, y:0}; // pixel movement direction
+let food = {};
+let score = 0;
 let aiEnabled = false;
 let gameStarted = false;
-
+let speed = 2; // pixels per frame
+let moveInterval = 120; // for AI path updates
 let highScore = localStorage.getItem("neonSnakeHighScore") || 0;
+
 document.getElementById("highScore").innerText = "High Score: " + highScore;
 
 // Speed buttons
-document.getElementById("slowBtn").addEventListener("click", () => selectSpeed(200, "slowBtn"));
-document.getElementById("normalBtn").addEventListener("click", () => selectSpeed(120, "normalBtn"));
-document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(60, "fastBtn"));
+document.getElementById("slowBtn").addEventListener("click", () => selectSpeed(1, 150, "slowBtn"));
+document.getElementById("normalBtn").addEventListener("click", () => selectSpeed(2, 120, "normalBtn"));
+document.getElementById("fastBtn").addEventListener("click", () => selectSpeed(4, 60, "fastBtn"));
 
-function selectSpeed(val, btnId){
-    selectedSpeed = val;
+function selectSpeed(pxSpeed, interval, btnId){
+    speed = pxSpeed;
+    moveInterval = interval;
     ["slowBtn","normalBtn","fastBtn"].forEach(id => document.getElementById(id).classList.remove("speed-selected"));
     document.getElementById(btnId).classList.add("speed-selected");
 }
 
 function initGame() {
-    snake = [{x:9*box, y:10*box}];
-    direction = "RIGHT";
+    snake = [{x:9*box, y:10*box}]; // pixel coordinates
+    direction = {x:1, y:0};
     food = randomFood();
     score = 0;
-    speed = selectedSpeed;
     document.getElementById("score").innerText="Score: 0";
     document.getElementById("gameOverOverlay").style.display="none";
     gameStarted=false;
-    draw();
+    lastMove = performance.now();
+    requestAnimationFrame(gameLoop);
 }
 
 function randomFood() {
@@ -95,132 +99,74 @@ document.addEventListener("keydown", function(e){
     if(arrowKeys.includes(e.key)){
         if(!gameStarted){
             gameStarted=true;
-            clearInterval(game);
-            game=setInterval(draw,speed);
         }
         if(!aiEnabled){
-            if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
-            if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
-            if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
-            if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
+            if(e.key==="ArrowLeft" && direction.x!==1) direction={x:-1,y:0};
+            if(e.key==="ArrowUp" && direction.y!==1) direction={x:0,y:-1};
+            if(e.key==="ArrowRight" && direction.x!==-1) direction={x:1,y:0};
+            if(e.key==="ArrowDown" && direction.y!==-1) direction={x:0,y:1};
         }
     }
 });
 
-function collision(head,array){ return array.some(seg=>seg.x===head.x && seg.y===head.y); }
+function collision(pos,array){
+    return array.some(seg=>Math.abs(seg.x - pos.x)<1 && Math.abs(seg.y - pos.y)<1);
+}
 
-// =======================
-// Unbeatable AI (BFS pathfinding)
-// =======================
+// AI simplified for smooth movement
 function runAI(){
     const head = snake[0];
-
-    const directions = ["LEFT","RIGHT","UP","DOWN"];
-    const moves = directions.map(d=>({dir:d,pos:getNextPosition(d)})).filter(m=>!isDanger(m.pos));
-
-    if(moves.length===0) return; // trapped
-
-    // BFS to find shortest path to food
-    const queue = [];
-    const visited = Array(gridSize).fill(null).map(()=>Array(gridSize).fill(false));
-    queue.push({x: head.x, y: head.y, path: []});
-    visited[head.y/box][head.x/box] = true;
-
-    let foundPath = null;
-
-    const bodySet = new Set(snake.map(s=>s.x+","+s.y));
-
-    while(queue.length>0){
-        const current = queue.shift();
-        if(current.x===food.x && current.y===food.y){
-            foundPath = current.path;
-            break;
-        }
-        for(const d of directions){
-            const next = {x: current.x, y: current.y};
-            if(d==="LEFT") next.x-=box;
-            if(d==="RIGHT") next.x+=box;
-            if(d==="UP") next.y-=box;
-            if(d==="DOWN") next.y+=box;
-            if(next.x<0||next.y<0||next.x>=gridSize*box||next.y>=gridSize*box) continue;
-            if(bodySet.has(next.x+","+next.y)) continue;
-            if(visited[next.y/box][next.x/box]) continue;
-            visited[next.y/box][next.x/box]=true;
-            queue.push({x:next.x, y:next.y, path:current.path.concat(d)});
-        }
-    }
-
-    if(foundPath && foundPath.length>0){
-        direction = foundPath[0];
-    }else{
-        // No path to food: move towards tail safely
-        const tail = snake[snake.length-1];
-        const safeMoves = moves.filter(m=>{
-            const dx = Math.abs(m.pos.x-tail.x);
-            const dy = Math.abs(m.pos.y-tail.y);
-            return dx+dy>0;
-        });
-        if(safeMoves.length>0) direction = safeMoves[0].dir;
-        else direction = moves[0].dir;
+    const dx = food.x - head.x;
+    const dy = food.y - head.y;
+    // prioritize horizontal movement
+    if(Math.abs(dx) > Math.abs(dy)){
+        direction.x = dx>0?1:-1; direction.y=0;
+    } else {
+        direction.x=0; direction.y=dy>0?1:-1;
     }
 }
 
-function getNextPosition(dir){
-    let x=snake[0].x, y=snake[0].y;
-    if(dir==="LEFT") x-=box;
-    if(dir==="RIGHT") x+=box;
-    if(dir==="UP") y-=box;
-    if(dir==="DOWN") y+=box;
-    return {x,y};
-}
-
-function isDanger(pos){
-    return (pos.x<0 || pos.y<0 || pos.x>=gridSize*box || pos.y>=gridSize*box || collision(pos,snake));
-}
-
-function draw(){
-    ctx.fillStyle="#000"; ctx.fillRect(0,0,gridSize*box,gridSize*box);
+let lastMove = 0;
+function gameLoop(timestamp){
+    ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
 
     if(aiEnabled && gameStarted) runAI();
 
+    // Move snake only every N pixels
+    if(gameStarted && timestamp - lastMove > moveInterval){
+        lastMove = timestamp;
+        const newHead = { x: snake[0].x + direction.x*box, y: snake[0].y + direction.y*box };
+        
+        // Check collision
+        if(newHead.x<0||newHead.y<0||newHead.x>=gridSize*box||newHead.y>=gridSize*box||collision(newHead,snake)){
+            if(score>highScore){ highScore=score; localStorage.setItem("neonSnakeHighScore",highScore); document.getElementById("highScore").innerText="High Score: "+highScore; }
+            document.getElementById("gameOverText").innerText="Game Over! Score: "+score;
+            document.getElementById("gameOverOverlay").style.display="flex";
+            return;
+        }
+
+        snake.unshift(newHead);
+        // Eat food
+        if(Math.abs(newHead.x - food.x)<1 && Math.abs(newHead.y - food.y)<1){
+            score++;
+            document.getElementById("score").innerText="Score: "+score;
+            food=randomFood();
+        } else snake.pop();
+    }
+
+    // Draw snake
     snake.forEach((seg,i)=>{
         ctx.fillStyle=i===0?"#0ff":"#00aaaa";
         ctx.fillRect(seg.x,seg.y,box,box);
     });
 
+    // Draw food
     ctx.fillStyle="#ff00ff"; ctx.fillRect(food.x,food.y,box,box);
 
-    if(!gameStarted) return;
-
-    let snakeX=snake[0].x;
-    let snakeY=snake[0].y;
-    if(direction==="LEFT") snakeX-=box;
-    if(direction==="RIGHT") snakeX+=box;
-    if(direction==="UP") snakeY-=box;
-    if(direction==="DOWN") snakeY+=box;
-
-    if(snakeX===food.x && snakeY===food.y){
-        score++;
-        document.getElementById("score").innerText="Score: "+score;
-        clearInterval(game);
-        game=setInterval(draw,speed);
-        food=randomFood();
-    } else snake.pop();
-
-    const newHead={x:snakeX,y:snakeY};
-
-    if(isDanger(newHead)){
-        clearInterval(game);
-        if(score>highScore){ highScore=score; localStorage.setItem("neonSnakeHighScore",highScore); document.getElementById("highScore").innerText="High Score: "+highScore; }
-        document.getElementById("gameOverText").innerText="Game Over! Score: "+score;
-        document.getElementById("gameOverOverlay").style.display="flex";
-        return;
-    }
-
-    snake.unshift(newHead);
+    requestAnimationFrame(gameLoop);
 }
 
-function restartGame(){ clearInterval(game); initGame(); }
+function restartGame(){ initGame(); }
 
 initGame();
 </script>
